@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web VLC Player</title>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+        #streamUrl {
+            width: 100%;
+            max-width: 600px;
+            padding: 10px;
+            margin-bottom: 10px;
+            font-size: 1rem;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 1rem;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-bottom: 10px;
+            width: 100%;
+            max-width: 200px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #m3uFile {
+            margin-bottom: 10px;
+            width: 100%;
+            max-width: 600px;
+        }
+        #channelList {
+            list-style: none;
+            padding: 0;
+            width: 100%;
+            max-width: 600px;
+            margin-bottom: 20px;
+        }
+        #channelList li {
+            background-color: white;
+            padding: 15px;
+            margin-bottom: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.2s;
+        }
+        #channelList li:hover {
+            background-color: #e0e0e0;
+        }
+        #videoPlayer {
+            width: 100%;
+            max-width: 640px;
+            height: auto;
+            background-color: black;
+            border-radius: 4px;
+        }
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+            h1 {
+                font-size: 1.5rem;
+            }
+            #streamUrl, #m3uFile {
+                font-size: 0.9rem;
+                padding: 8px;
+            }
+            button {
+                font-size: 0.9rem;
+                padding: 8px 16px;
+            }
+            #channelList li {
+                font-size: 0.9rem;
+                padding: 12px;
+            }
+            #videoPlayer {
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Web VLC Player</h1>
+    <input type="text" id="streamUrl" placeholder="m3u/m3u8 URLを入力">
+    <button onclick="playStream()">再生</button>
+    <input type="file" id="m3uFile" accept=".m3u,.m3u8">
+    <button onclick="fetchM3U()">オンラインM3Uを取得</button>
+    <ul id="channelList"></ul>
+    <video id="videoPlayer" controls></video>
+
+    <script>
+        const video = document.getElementById('videoPlayer');
+        const streamUrlInput = document.getElementById('streamUrl');
+        const m3uFileInput = document.getElementById('m3uFile');
+        const channelList = document.getElementById('channelList');
+
+        // ストリーム再生
+        function playStream(url = streamUrlInput.value) {
+            if (Hls.isSupported()) {
+                const hls = new Hls();
+                hls.loadSource(url);
+                hls.attachMedia(video);
+                video.play();
+            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                video.src = url;
+                video.play();
+            } else {
+                alert('HLS非対応のブラウザです。');
+            }
+        }
+
+        // m3uファイルの読み込み
+        m3uFileInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const content = e.target.result;
+                    parseM3U(content);
+                };
+                reader.readAsText(file);
+            }
+        });
+
+        // オンラインM3Uファイルの取得
+        function fetchM3U() {
+            fetch('https://raw.githubusercontent.com/luongz/iptv-jp/refs/heads/main/jp.m3u')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('ネットワークエラー: M3Uファイルの取得に失敗しました');
+                    }
+                    return response.text();
+                })
+                .then(data => {
+                    parseM3U(data);
+                })
+                .catch(error => {
+                    alert('エラー: ' + error.message);
+                });
+        }
+
+        // m3uプレイリストの解析
+        function parseM3U(content) {
+            const lines = content.split('\n');
+            channelList.innerHTML = '';
+            let channelName = '';
+            lines.forEach((line) => {
+                if (line.startsWith('#EXTINF:')) {
+                    channelName = line.match(/,(.+)/)?.[1] || '不明なチャンネル';
+                } else if (line.startsWith('http') && channelName) {
+                    const li = document.createElement('li');
+                    li.textContent = channelName;
+                    li.style.cursor = 'pointer';
+                    li.onclick = () => playStream(line.trim());
+                    channelList.appendChild(li);
+                    channelName = '';
+                }
+            });
+        }
+    </script>
+</body>
+</html>
