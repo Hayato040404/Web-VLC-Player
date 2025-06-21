@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>Web VLC Player</title>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+</head>
+<body>
+    <h1>Web VLC Player</h1>
+    <input type="text" id="streamUrl" placeholder="m3u/m3u8 URLを入力">
+    <button onclick="playStream()">再生</button>
+    <input type="file" id="m3uFile" accept=".m3u,.m3u8">
+    <ul id="channelList"></ul>
+    <video id="videoPlayer" controls width="640"></video>
+
+    <script>
+        const video = document.getElementById('videoPlayer');
+        const streamUrlInput = document.getElementById('streamUrl');
+        const m3uFileInput = document.getElementById('m3uFile');
+        const channelList = document.getElementById('channelList');
+
+        // ストリーム再生
+        function playStream(url = streamUrlInput.value) {
+            if (Hls.isSupported()) {
+                const hls = new Hls();
+                hls.loadSource(url);
+                hls.attachMedia(video);
+                video.play();
+            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                video.src = url;
+                video.play();
+            } else {
+                alert('HLS非対応のブラウザです。');
+            }
+        }
+
+        // m3uファイルの読み込み
+        m3uFileInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const content = e.target.result;
+                    parseM3U(content);
+                };
+                reader.readAsText(file);
+            }
+        });
+
+        // m3uプレイリストの解析
+        function parseM3U(content) {
+            const lines = content.split('\n');
+            channelList.innerHTML = '';
+            let channelName = '';
+            lines.forEach((line) => {
+                if (line.startsWith('#EXTINF:')) {
+                    channelName = line.match(/,(.+)/)?.[1] || '不明なチャンネル';
+                } else if (line.startsWith('http') && channelName) {
+                    const li = document.createElement('li');
+                    li.textContent = channelName;
+                    li.style.cursor = 'pointer';
+                    li.onclick = () => playStream(line.trim());
+                    channelList.appendChild(li);
+                    channelName = '';
+                }
+            });
+        }
+    </script>
+</body>
+</html>
