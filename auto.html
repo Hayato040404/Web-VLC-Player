@@ -700,6 +700,10 @@
                 return;
             }
 
+            // CORSエラーを回避するためのプロキシURL
+            const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
+            const proxiedUrl = url.startsWith('http') ? proxyUrl + url : url;
+
             // 既存のHLSインスタンスをクリーンアップ
             cleanupHls();
             retryCount = 0;
@@ -743,10 +747,14 @@
                     // ストリーミング最適化
                     liveSyncDuration: undefined,
                     liveMaxLatencyDuration: undefined,
-                    maxLiveSyncPlaybackRate: 1
+                    maxLiveSyncPlaybackRate: 1,
+                    // CORS対応
+                    xhrSetup: function(xhr, url) {
+                        xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+                    }
                 });
 
-                currentHls.loadSource(url);
+                currentHls.loadSource(proxiedUrl);
                 currentHls.attachMedia(video);
                 
                 currentHls.on(Hls.Events.MANIFEST_PARSED, () => {
@@ -828,7 +836,7 @@
                 currentHls.startLoad();
             } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
                 console.log('Using native HLS support');
-                video.src = url;
+                video.src = proxiedUrl;
                 video.load();
                 video.play().catch(e => {
                     console.log('Auto-play prevented:', e);
@@ -887,7 +895,15 @@
         // オンラインM3Uファイルの取得
         function fetchM3U() {
             loading.classList.add('show');
-            fetch('https://raw.githubusercontent.com/luongz/iptv-jp/refs/heads/main/jp.m3u')
+            // CORSエラーを回避するためのプロキシを使用
+            const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
+            const targetUrl = 'https://raw.githubusercontent.com/luongz/iptv-jp/refs/heads/main/jp.m3u';
+            
+            fetch(proxyUrl + targetUrl, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
                 .then(response => {
                     if (!response.ok) {
                         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -901,7 +917,8 @@
                 })
                 .catch(error => {
                     loading.classList.remove('show');
-                    showError('オンラインプレイリストの取得に失敗しました: ' + error.message);
+                    showError('オンラインプレイリストの取得に失敗しました。プロキシサーバーが利用できない可能性があります。');
+                    console.error('Fetch error:', error);
                 });
         }
 
