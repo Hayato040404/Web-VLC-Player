@@ -706,30 +706,69 @@
 
             if (Hls.isSupported()) {
                 currentHls = new Hls({
-                    enableWorker: false,
-                    lowLatencyMode: false,
+                    // パフォーマンス最適化設定
+                    enableWorker: true,
+                    lowLatencyMode: true,
+                    backBufferLength: 90,
                     maxBufferLength: 30,
-                    maxMaxBufferLength: 60,
+                    maxMaxBufferLength: 600,
                     maxBufferSize: 60 * 1000 * 1000,
-                    maxBufferHole: 0.5,
-                    highBufferWatchdogPeriod: 2,
+                    maxBufferHole: 0.1,
+                    highBufferWatchdogPeriod: 1,
                     nudgeOffset: 0.1,
-                    nudgeMaxRetry: 3,
-                    maxFragLookUpTolerance: 0.25,
-                    liveSyncDurationCount: 3,
-                    liveMaxLatencyDurationCount: 10,
-                    liveDurationInfinity: false,
-                    enableSoftwareAES: true
+                    nudgeMaxRetry: 5,
+                    maxFragLookUpTolerance: 0.2,
+                    liveSyncDurationCount: 1,
+                    liveMaxLatencyDurationCount: 5,
+                    liveDurationInfinity: true,
+                    enableSoftwareAES: false,
+                    // 追加の最適化設定
+                    startLevel: -1,
+                    capLevelToPlayerSize: true,
+                    debug: false,
+                    autoStartLoad: true,
+                    startPosition: -1,
+                    defaultAudioCodec: undefined,
+                    initialLiveManifestSize: 1,
+                    maxLoadingDelay: 4,
+                    maxRetries: 3,
+                    maxRetryDelay: 64,
+                    retryDelayOnError: 1,
+                    retryDelayOnFailure: 1,
+                    // フラグメント読み込み最適化
+                    fragLoadingTimeOut: 20000,
+                    manifestLoadingTimeOut: 10000,
+                    fragLoadingMaxRetry: 6,
+                    manifestLoadingMaxRetry: 6,
+                    // ストリーミング最適化
+                    liveSyncDuration: undefined,
+                    liveMaxLatencyDuration: undefined,
+                    maxLiveSyncPlaybackRate: 1
                 });
 
                 currentHls.loadSource(url);
                 currentHls.attachMedia(video);
                 
                 currentHls.on(Hls.Events.MANIFEST_PARSED, () => {
+                    console.log('Manifest parsed, starting playback...');
                     video.play().catch(e => {
                         console.log('Auto-play prevented:', e);
                         showError('自動再生がブロックされました。手動で再生ボタンを押してください。');
                     });
+                });
+
+                // バッファリング状態の監視
+                currentHls.on(Hls.Events.BUFFER_APPENDING, () => {
+                    console.log('Buffer appending...');
+                });
+
+                currentHls.on(Hls.Events.BUFFER_APPENDED, () => {
+                    console.log('Buffer appended successfully');
+                });
+
+                // レベル変更の監視
+                currentHls.on(Hls.Events.LEVEL_SWITCHED, (event, data) => {
+                    console.log('Quality level switched to:', data.level);
                 });
 
                 currentHls.on(Hls.Events.ERROR, (event, data) => {
@@ -743,9 +782,10 @@
                                     console.log(`Network error, retrying... (${retryCount}/${maxRetries})`);
                                     setTimeout(() => {
                                         if (currentHls) {
+                                            currentHls.recoverMediaError();
                                             currentHls.startLoad();
                                         }
-                                    }, 1000 * retryCount);
+                                    }, 500 * retryCount);
                                 } else {
                                     showError('ネットワークエラー: ストリームに接続できません');
                                     cleanupHls();
@@ -771,6 +811,12 @@
                                 cleanupHls();
                                 break;
                         }
+                    } else {
+                        // 非致命的エラーの場合は自動回復を試行
+                        console.log('Non-fatal error, attempting recovery:', data.details);
+                        if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+                            currentHls.recoverMediaError();
+                        }
                     }
                 });
 
@@ -778,8 +824,12 @@
                     retryCount = 0;
                 });
 
+                // 読み込み開始
+                currentHls.startLoad();
             } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                console.log('Using native HLS support');
                 video.src = url;
+                video.load();
                 video.play().catch(e => {
                     console.log('Auto-play prevented:', e);
                     showError('自動再生がブロックされました。手動で再生ボタンを押してください。');
