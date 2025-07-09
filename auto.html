@@ -3,890 +3,143 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StreamTube - Web Video Player</title>
+    <title>Web VLC Player</title>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        * {
+        body {
+            font-family: Arial, sans-serif;
             margin: 0;
-            padding: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+        #streamUrl {
+            width: 100%;
+            max-width: 600px;
+            padding: 10px;
+            margin-bottom: 10px;
+            font-size: 1rem;
+            border: 1px solid #ccc;
+            border-radius: 4px;
             box-sizing: border-box;
         }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: #ffffff;
-            color: #1d1d1f;
-            line-height: 1.47059;
-            font-size: 17px;
-            font-weight: 400;
-            letter-spacing: -0.022em;
-        }
-
-        /* Header */
-        .header {
-            background: rgba(255, 255, 255, 0.8);
-            backdrop-filter: saturate(180%) blur(20px);
-            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-            padding: 0 24px;
-            height: 56px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-        }
-
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 20px;
-            font-weight: 600;
-            color: #1d1d1f;
-            text-decoration: none;
-        }
-
-        .logo i {
-            font-size: 24px;
-            color: #ff0000;
-        }
-
-        .search-container {
-            display: flex;
-            align-items: center;
-            max-width: 640px;
-            flex: 1;
-            margin: 0 40px;
-        }
-
-        .search-box {
-            flex: 1;
-            background: #f5f5f7;
-            border: 1px solid rgba(0, 0, 0, 0.1);
-            border-radius: 20px 0 0 20px;
-            padding: 8px 16px;
-            color: #1d1d1f;
-            font-size: 16px;
-            outline: none;
-            transition: all 0.15s ease;
-            font-family: inherit;
-        }
-
-        .search-box:focus {
-            border-color: #0066cc;
-            background: #ffffff;
-            box-shadow: 0 0 0 4px rgba(0, 102, 204, 0.1);
-        }
-
-        .search-btn {
-            background: #f5f5f7;
-            border: 1px solid rgba(0, 0, 0, 0.1);
-            border-left: none;
-            border-radius: 0 20px 20px 0;
-            padding: 8px 16px;
-            cursor: pointer;
-            color: #1d1d1f;
-            transition: all 0.15s ease;
-            font-size: 16px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .search-btn:hover {
-            background: #e8e8ed;
-        }
-
-        .search-btn:active {
-            background: #d2d2d7;
-        }
-
-        .user-menu {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-
-        .icon-btn {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: none;
-            border: none;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #1d1d1f;
-            transition: all 0.15s ease;
-        }
-
-        .icon-btn:hover {
-            background: rgba(0, 0, 0, 0.04);
-        }
-
-        /* Main Content */
-        .container {
-            max-width: 1280px;
-            margin: 0 auto;
-            padding: 24px;
-        }
-
-        .video-section {
-            display: grid;
-            grid-template-columns: 1fr 402px;
-            gap: 24px;
-            margin-bottom: 24px;
-        }
-
-        .video-container {
-            background: #000000;
-            border-radius: 12px;
-            overflow: hidden;
-            position: relative;
-            aspect-ratio: 16/9;
-        }
-
-        #videoPlayer {
-            width: 100%;
-            height: 100%;
-            background-color: #000000;
-            border-radius: 12px;
-        }
-
-        .video-info {
-            padding: 16px 0;
-        }
-
-        .video-title {
-            font-size: 20px;
-            font-weight: 600;
-            line-height: 1.3;
-            color: #1d1d1f;
-            margin-bottom: 8px;
-        }
-
-        .video-meta {
-            color: #86868b;
-            font-size: 14px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 12px;
-        }
-
-        .live-indicator {
-            background: #ff0000;
+        button {
+            padding: 10px 20px;
+            font-size: 1rem;
+            background-color: #007bff;
             color: white;
-            padding: 2px 6px;
+            border: none;
             border-radius: 4px;
-            font-size: 12px;
-            font-weight: 500;
-            text-transform: uppercase;
-        }
-
-        .video-actions {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 0;
-            border-top: 1px solid #f5f5f7;
-            border-bottom: 1px solid #f5f5f7;
-        }
-
-        .action-btn {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 16px;
-            background: none;
-            border: none;
-            border-radius: 18px;
             cursor: pointer;
-            font-size: 14px;
-            font-weight: 500;
-            color: #1d1d1f;
-            transition: all 0.15s ease;
-        }
-
-        .action-btn:hover {
-            background: #f5f5f7;
-        }
-
-        /* Sidebar */
-        .sidebar {
-            background: #ffffff;
-        }
-
-        .sidebar-section {
-            margin-bottom: 24px;
-        }
-
-        .sidebar-title {
-            font-size: 16px;
-            font-weight: 600;
-            color: #1d1d1f;
-            margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .controls-card {
-            background: #f5f5f7;
-            border-radius: 12px;
-            padding: 16px;
-            margin-bottom: 16px;
-        }
-
-        .control-group {
-            margin-bottom: 16px;
-        }
-
-        .control-group:last-child {
-            margin-bottom: 0;
-        }
-
-        .control-label {
-            display: block;
-            font-size: 14px;
-            font-weight: 500;
-            margin-bottom: 8px;
-            color: #1d1d1f;
-        }
-
-        .url-input {
+            margin-bottom: 10px;
             width: 100%;
-            background: #ffffff;
-            border: 1px solid rgba(0, 0, 0, 0.1);
-            border-radius: 8px;
-            padding: 12px;
-            color: #1d1d1f;
-            font-size: 14px;
-            outline: none;
-            transition: all 0.15s ease;
-            font-family: inherit;
+            max-width: 200px;
         }
-
-        .url-input:focus {
-            border-color: #0066cc;
-            box-shadow: 0 0 0 4px rgba(0, 102, 204, 0.1);
+        button:hover {
+            background-color: #0056b3;
         }
-
-        .btn {
-            background: #0066cc;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            padding: 12px 16px;
-            font-size: 14px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.15s ease;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            font-family: inherit;
+        #m3uFile {
+            margin-bottom: 10px;
             width: 100%;
-            justify-content: center;
+            max-width: 600px;
         }
-
-        .btn:hover {
-            background: #0056b3;
-        }
-
-        .btn:active {
-            background: #004494;
-        }
-
-        .btn-secondary {
-            background: #f5f5f7;
-            color: #1d1d1f;
-        }
-
-        .btn-secondary:hover {
-            background: #e8e8ed;
-        }
-
-        .btn-secondary:active {
-            background: #d2d2d7;
-        }
-
-        .file-input {
-            width: 100%;
-            padding: 12px;
-            background: #ffffff;
-            border: 2px dashed #d2d2d7;
-            border-radius: 8px;
-            color: #86868b;
-            cursor: pointer;
-            transition: all 0.15s ease;
-            text-align: center;
-            font-size: 14px;
-            font-family: inherit;
-        }
-
-        .file-input:hover {
-            border-color: #0066cc;
-            color: #1d1d1f;
-        }
-
-        /* Channel List */
         #channelList {
             list-style: none;
-            max-height: 400px;
-            overflow-y: auto;
+            padding: 0;
+            width: 100%;
+            max-width: 600px;
+            margin-bottom: 20px;
         }
-
-        #channelList::-webkit-scrollbar {
-            width: 4px;
-        }
-
-        #channelList::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
-        #channelList::-webkit-scrollbar-thumb {
-            background: #d2d2d7;
-            border-radius: 2px;
-        }
-
-        #channelList::-webkit-scrollbar-thumb:hover {
-            background: #a1a1a6;
-        }
-
-        .channel-item {
-            background: #ffffff;
-            padding: 12px;
-            margin-bottom: 4px;
-            border-radius: 8px;
+        #channelList li {
+            background-color: white;
+            padding: 15px;
+            margin-bottom: 5px;
+            border-radius: 4px;
             cursor: pointer;
-            font-size: 14px;
-            transition: all 0.15s ease;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            border: 1px solid transparent;
+            font-size: 1rem;
+            transition: background-color 0.2s;
         }
-
-        .channel-item:hover {
-            background: #f5f5f7;
+        #channelList li:hover {
+            background-color: #e0e0e0;
         }
-
-        .channel-item.active {
-            background: rgba(0, 102, 204, 0.1);
-            border-color: #0066cc;
-            color: #0066cc;
+        #videoPlayer {
+            width: 100%;
+            max-width: 640px;
+            height: auto;
+            background-color: black;
+            border-radius: 4px;
         }
-
-        .channel-avatar {
-            width: 32px;
-            height: 32px;
-            background: linear-gradient(135deg, #ff0000, #cc0000);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
-            font-weight: 600;
-            color: white;
-            flex-shrink: 0;
-        }
-
-        .channel-name {
-            flex: 1;
-            font-weight: 400;
-            color: #1d1d1f;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
-        .channel-item.active .channel-name {
-            color: #0066cc;
-            font-weight: 500;
-        }
-
-        /* Loading State */
-        .loading {
-            display: none;
-            text-align: center;
-            padding: 24px;
-            color: #86868b;
-        }
-
-        .loading.show {
-            display: block;
-        }
-
-        .spinner {
-            width: 20px;
-            height: 20px;
-            border: 2px solid #f5f5f7;
-            border-top: 2px solid #0066cc;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 12px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        /* Messages */
-        .message {
-            padding: 12px 16px;
-            border-radius: 8px;
-            margin: 16px 0;
-            display: none;
-            align-items: center;
-            gap: 8px;
-            font-size: 14px;
-            font-weight: 500;
-        }
-
-        .message.show {
-            display: flex;
-        }
-
-        .error-message {
-            background: #fff5f5;
-            color: #d70015;
-            border: 1px solid #fecaca;
-        }
-
-        .success-message {
-            background: #f0fdf4;
-            color: #15803d;
-            border: 1px solid #bbf7d0;
-        }
-
-        /* Empty State */
-        .empty-state {
-            text-align: center;
-            padding: 32px 16px;
-            color: #86868b;
-        }
-
-        .empty-state i {
-            font-size: 32px;
-            margin-bottom: 12px;
-            color: #d2d2d7;
-        }
-
-        .empty-state h3 {
-            font-size: 16px;
-            margin-bottom: 4px;
-            color: #1d1d1f;
-            font-weight: 500;
-        }
-
-        .empty-state p {
-            font-size: 14px;
-            color: #86868b;
-        }
-
-        /* Responsive Design */
-        @media (max-width: 1024px) {
-            .video-section {
-                grid-template-columns: 1fr;
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
             }
-            
-            .sidebar {
-                order: -1;
+            h1 {
+                font-size: 1.5rem;
             }
-        }
-
-        @media (max-width: 768px) {
-            .container {
-                padding: 16px;
+            #streamUrl, #m3uFile {
+                font-size: 0.9rem;
+                padding: 8px;
             }
-            
-            .search-container {
-                margin: 0 16px;
+            button {
+                font-size: 0.9rem;
+                padding: 8px 16px;
             }
-            
-            .header {
-                padding: 0 16px;
+            #channelList li {
+                font-size: 0.9rem;
+                padding: 12px;
             }
-            
-            .video-title {
-                font-size: 18px;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .search-container {
-                display: none;
-            }
-            
-            .user-menu {
-                gap: 8px;
+            #videoPlayer {
+                max-width: 100%;
             }
         }
     </style>
 </head>
 <body>
-    <!-- Header -->
-    <div class="header">
-        <div class="logo">
-            <i class="fab fa-youtube"></i>
-            StreamTube
-        </div>
-        <div class="search-container">
-            <input type="text" class="search-box" id="streamUrl" placeholder="ストリーミングURLを検索...">
-            <button class="search-btn" onclick="playStream()">
-                <i class="fas fa-search"></i>
-            </button>
-        </div>
-        <div class="user-menu">
-            <button class="icon-btn">
-                <i class="fas fa-video"></i>
-            </button>
-            <button class="icon-btn">
-                <i class="fas fa-bell"></i>
-            </button>
-            <button class="icon-btn">
-                <i class="fas fa-user-circle"></i>
-            </button>
-        </div>
-    </div>
-
-    <!-- Main Content -->
-    <div class="container">
-        <!-- Messages -->
-        <div class="error-message message" id="errorMessage">
-            <i class="fas fa-exclamation-triangle"></i>
-            <span id="errorText"></span>
-        </div>
-
-        <div class="success-message message" id="successMessage">
-            <i class="fas fa-check-circle"></i>
-            <span id="successText"></span>
-        </div>
-
-        <!-- Video Section -->
-        <div class="video-section">
-            <div>
-                <div class="video-container">
-                    <video id="videoPlayer" controls></video>
-                </div>
-                <div class="video-info">
-                    <h1 class="video-title" id="currentTitle">ストリームを選択してください</h1>
-                    <div class="video-meta" id="currentMeta">
-                        <span class="live-indicator">LIVE</span>
-                        <span>ライブストリーミング</span>
-                        <span>•</span>
-                        <span>視聴者数 0人</span>
-                    </div>
-                    <div class="video-actions">
-                        <button class="action-btn">
-                            <i class="fas fa-thumbs-up"></i>
-                            いいね
-                        </button>
-                        <button class="action-btn">
-                            <i class="fas fa-thumbs-down"></i>
-                            低評価
-                        </button>
-                        <button class="action-btn">
-                            <i class="fas fa-share"></i>
-                            共有
-                        </button>
-                        <button class="action-btn">
-                            <i class="fas fa-download"></i>
-                            保存
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Sidebar -->
-            <div class="sidebar">
-                <div class="sidebar-section">
-                    <div class="sidebar-title">
-                        <i class="fas fa-cog"></i>
-                        コントロール
-                    </div>
-                    <div class="controls-card">
-                        <div class="control-group">
-                            <label class="control-label">M3Uファイルをアップロード</label>
-                            <input type="file" id="m3uFile" accept=".m3u,.m3u8" class="file-input">
-                        </div>
-                        <div class="control-group">
-                            <button class="btn btn-secondary" onclick="fetchM3U()">
-                                <i class="fas fa-cloud-download-alt"></i>
-                                オンラインプレイリストを取得
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="sidebar-section">
-                    <div class="sidebar-title">
-                        <i class="fas fa-list"></i>
-                        チャンネル一覧
-                    </div>
-                    <div class="loading" id="loading">
-                        <div class="spinner"></div>
-                        読み込み中...
-                    </div>
-                    <ul id="channelList">
-                        <div class="empty-state">
-                            <i class="fas fa-tv"></i>
-                            <h3>チャンネルがありません</h3>
-                            <p>M3Uファイルを読み込んでください</p>
-                        </div>
-                    </ul>
-                </div>
-            </div>
-        </div>
-    </div>
+    <h1>Web VLC Player</h1>
+    <input type="text" id="streamUrl" placeholder="m3u/m3u8 URLを入力">
+    <button onclick="playStream()">再生</button>
+    <input type="file" id="m3uFile" accept=".m3u,.m3u8">
+    <button onclick="fetchM3U()">オンラインM3Uを取得</button>
+    <ul id="channelList"></ul>
+    <video id="videoPlayer" controls></video>
 
     <script>
         const video = document.getElementById('videoPlayer');
         const streamUrlInput = document.getElementById('streamUrl');
         const m3uFileInput = document.getElementById('m3uFile');
         const channelList = document.getElementById('channelList');
-        const currentTitle = document.getElementById('currentTitle');
-        const currentMeta = document.getElementById('currentMeta');
-        const loading = document.getElementById('loading');
-        const errorMessage = document.getElementById('errorMessage');
-        const errorText = document.getElementById('errorText');
-        const successMessage = document.getElementById('successMessage');
-        const successText = document.getElementById('successText');
 
-        let currentHls = null;
-        let retryCount = 0;
-        const maxRetries = 3;
-
-        // エラー表示
-        function showError(message) {
-            errorText.textContent = message;
-            errorMessage.classList.add('show');
-            setTimeout(() => {
-                errorMessage.classList.remove('show');
-            }, 5000);
-        }
-
-        // 成功メッセージ表示
-        function showSuccess(message) {
-            successText.textContent = message;
-            successMessage.classList.add('show');
-            setTimeout(() => {
-                successMessage.classList.remove('show');
-            }, 3000);
-        }
-
-        // HLSインスタンスのクリーンアップ
-        function cleanupHls() {
-            if (currentHls) {
-                try {
-                    currentHls.destroy();
-                } catch (e) {
-                    console.warn('HLS cleanup warning:', e);
-                }
-                currentHls = null;
-            }
-        }
-
-        // ストリーム再生（エラーハンドリング強化）
+        // ストリーム再生
         function playStream(url = streamUrlInput.value) {
-            if (!url) {
-                showError('URLを入力してください');
-                return;
-            }
-
-            // CORSエラーを回避するためのプロキシURL
-            const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
-            const proxiedUrl = url.startsWith('http') ? proxyUrl + url : url;
-
-            // 既存のHLSインスタンスをクリーンアップ
-            cleanupHls();
-            retryCount = 0;
-
             if (Hls.isSupported()) {
-                currentHls = new Hls({
-                    // パフォーマンス最適化設定
-                    enableWorker: true,
-                    lowLatencyMode: true,
-                    backBufferLength: 90,
-                    maxBufferLength: 30,
-                    maxMaxBufferLength: 600,
-                    maxBufferSize: 60 * 1000 * 1000,
-                    maxBufferHole: 0.1,
-                    highBufferWatchdogPeriod: 1,
-                    nudgeOffset: 0.1,
-                    nudgeMaxRetry: 5,
-                    maxFragLookUpTolerance: 0.2,
-                    liveSyncDurationCount: 1,
-                    liveMaxLatencyDurationCount: 5,
-                    liveDurationInfinity: true,
-                    enableSoftwareAES: false,
-                    // 追加の最適化設定
-                    startLevel: -1,
-                    capLevelToPlayerSize: true,
-                    debug: false,
-                    autoStartLoad: true,
-                    startPosition: -1,
-                    defaultAudioCodec: undefined,
-                    initialLiveManifestSize: 1,
-                    maxLoadingDelay: 4,
-                    maxRetries: 3,
-                    maxRetryDelay: 64,
-                    retryDelayOnError: 1,
-                    retryDelayOnFailure: 1,
-                    // フラグメント読み込み最適化
-                    fragLoadingTimeOut: 20000,
-                    manifestLoadingTimeOut: 10000,
-                    fragLoadingMaxRetry: 6,
-                    manifestLoadingMaxRetry: 6,
-                    // ストリーミング最適化
-                    liveSyncDuration: undefined,
-                    liveMaxLatencyDuration: undefined,
-                    maxLiveSyncPlaybackRate: 1,
-                    // CORS対応
-                    xhrSetup: function(xhr, url) {
-                        xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
-                    }
-                });
-
-                currentHls.loadSource(proxiedUrl);
-                currentHls.attachMedia(video);
-                
-                currentHls.on(Hls.Events.MANIFEST_PARSED, () => {
-                    console.log('Manifest parsed, starting playback...');
-                    video.play().catch(e => {
-                        console.log('Auto-play prevented:', e);
-                        showError('自動再生がブロックされました。手動で再生ボタンを押してください。');
-                    });
-                });
-
-                // バッファリング状態の監視
-                currentHls.on(Hls.Events.BUFFER_APPENDING, () => {
-                    console.log('Buffer appending...');
-                });
-
-                currentHls.on(Hls.Events.BUFFER_APPENDED, () => {
-                    console.log('Buffer appended successfully');
-                });
-
-                // レベル変更の監視
-                currentHls.on(Hls.Events.LEVEL_SWITCHED, (event, data) => {
-                    console.log('Quality level switched to:', data.level);
-                });
-
-                currentHls.on(Hls.Events.ERROR, (event, data) => {
-                    console.warn('HLS Event:', event, data);
-                    
-                    if (data.fatal) {
-                        switch (data.type) {
-                            case Hls.ErrorTypes.NETWORK_ERROR:
-                                if (retryCount < maxRetries) {
-                                    retryCount++;
-                                    console.log(`Network error, retrying... (${retryCount}/${maxRetries})`);
-                                    setTimeout(() => {
-                                        if (currentHls) {
-                                            currentHls.recoverMediaError();
-                                            currentHls.startLoad();
-                                        }
-                                    }, 500 * retryCount);
-                                } else {
-                                    showError('ネットワークエラー: ストリームに接続できません');
-                                    cleanupHls();
-                                }
-                                break;
-                            case Hls.ErrorTypes.MEDIA_ERROR:
-                                if (retryCount < maxRetries) {
-                                    retryCount++;
-                                    console.log(`Media error, recovering... (${retryCount}/${maxRetries})`);
-                                    try {
-                                        currentHls.recoverMediaError();
-                                    } catch (e) {
-                                        showError('メディアエラー: ストリームの再生に失敗しました');
-                                        cleanupHls();
-                                    }
-                                } else {
-                                    showError('メディアエラー: ストリームの形式がサポートされていません');
-                                    cleanupHls();
-                                }
-                                break;
-                            default:
-                                showError('ストリームの再生に失敗しました: ' + data.details);
-                                cleanupHls();
-                                break;
-                        }
-                    } else {
-                        // 非致命的エラーの場合は自動回復を試行
-                        console.log('Non-fatal error, attempting recovery:', data.details);
-                        if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
-                            currentHls.recoverMediaError();
-                        }
-                    }
-                });
-
-                currentHls.on(Hls.Events.FRAG_LOADED, () => {
-                    retryCount = 0;
-                });
-
-                // 読み込み開始
-                currentHls.startLoad();
+                const hls = new Hls();
+                hls.loadSource(url);
+                hls.attachMedia(video);
+                video.play();
             } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                console.log('Using native HLS support');
-                video.src = proxiedUrl;
-                video.load();
-                video.play().catch(e => {
-                    console.log('Auto-play prevented:', e);
-                    showError('自動再生がブロックされました。手動で再生ボタンを押してください。');
-                });
+                video.src = url;
+                video.play();
             } else {
-                showError('このブラウザはHLSストリーミングに対応していません。');
+                alert('HLS非対応のブラウザです。');
             }
-        }
-
-        // チャンネル選択時の処理
-        function selectChannel(url, name) {
-            playStream(url);
-            currentTitle.textContent = name;
-            currentMeta.innerHTML = `
-                <span class="live-indicator">LIVE</span>
-                <span>${name}</span>
-                <span>•</span>
-                <span>視聴中</span>
-            `;
-            
-            // アクティブなチャンネルをハイライト
-            document.querySelectorAll('.channel-item').forEach(item => {
-                item.classList.remove('active');
-            });
-            event.target.closest('.channel-item').classList.add('active');
-            
-            showSuccess(`${name} の再生を開始しました`);
         }
 
         // m3uファイルの読み込み
         m3uFileInput.addEventListener('change', (event) => {
             const file = event.target.files[0];
             if (file) {
-                loading.classList.add('show');
                 const reader = new FileReader();
                 reader.onload = (e) => {
-                    try {
-                        const content = e.target.result;
-                        parseM3U(content);
-                        loading.classList.remove('show');
-                        showSuccess('M3Uファイルを正常に読み込みました');
-                    } catch (error) {
-                        loading.classList.remove('show');
-                        showError('M3Uファイルの読み込みに失敗しました');
-                    }
-                };
-                reader.onerror = () => {
-                    loading.classList.remove('show');
-                    showError('ファイルの読み込みに失敗しました');
+                    const content = e.target.result;
+                    parseM3U(content);
                 };
                 reader.readAsText(file);
             }
@@ -894,31 +147,18 @@
 
         // オンラインM3Uファイルの取得
         function fetchM3U() {
-            loading.classList.add('show');
-            // CORSエラーを回避するためのプロキシを使用
-            const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
-            const targetUrl = 'https://raw.githubusercontent.com/luongz/iptv-jp/refs/heads/main/jp.m3u';
-            
-            fetch(proxyUrl + targetUrl, {
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            })
+            fetch('https://raw.githubusercontent.com/luongz/iptv-jp/refs/heads/main/jp.m3u')
                 .then(response => {
                     if (!response.ok) {
-                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                        throw new Error('ネットワークエラー: M3Uファイルの取得に失敗しました');
                     }
                     return response.text();
                 })
                 .then(data => {
                     parseM3U(data);
-                    loading.classList.remove('show');
-                    showSuccess('オンラインプレイリストを取得しました');
                 })
                 .catch(error => {
-                    loading.classList.remove('show');
-                    showError('オンラインプレイリストの取得に失敗しました。プロキシサーバーが利用できない可能性があります。');
-                    console.error('Fetch error:', error);
+                    alert('エラー: ' + error.message);
                 });
         }
 
@@ -927,64 +167,19 @@
             const lines = content.split('\n');
             channelList.innerHTML = '';
             let channelName = '';
-            let channelCount = 0;
-            
             lines.forEach((line) => {
                 if (line.startsWith('#EXTINF:')) {
-                    channelName = line.match(/,(.+)/)?.[1]?.trim() || '不明なチャンネル';
-                } else if (line.trim().startsWith('http') && channelName) {
+                    channelName = line.match(/,(.+)/)?.[1] || '不明なチャンネル';
+                } else if (line.startsWith('http') && channelName) {
                     const li = document.createElement('li');
-                    li.className = 'channel-item';
-                    
-                    const avatar = document.createElement('div');
-                    avatar.className = 'channel-avatar';
-                    avatar.textContent = channelName.charAt(0).toUpperCase();
-                    
-                    const name = document.createElement('div');
-                    name.className = 'channel-name';
-                    name.textContent = channelName;
-                    
-                    li.appendChild(avatar);
-                    li.appendChild(name);
-                    li.onclick = () => selectChannel(line.trim(), channelName);
-                    
+                    li.textContent = channelName;
+                    li.style.cursor = 'pointer';
+                    li.onclick = () => playStream(line.trim());
                     channelList.appendChild(li);
                     channelName = '';
-                    channelCount++;
                 }
             });
-
-            if (channelCount === 0) {
-                channelList.innerHTML = `
-                    <div class="empty-state">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        <h3>チャンネルが見つかりません</h3>
-                        <p>有効なM3Uファイルを選択してください</p>
-                    </div>
-                `;
-            }
         }
-
-        // キーボードショートカット
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && document.activeElement === streamUrlInput) {
-                playStream();
-            }
-        });
-
-        // ページ離脱時のクリーンアップ
-        window.addEventListener('beforeunload', () => {
-            cleanupHls();
-        });
-
-        // ページ非表示時の処理
-        document.addEventListener('visibilitychange', () => {
-            if (document.hidden && currentHls) {
-                currentHls.stopLoad();
-            } else if (!document.hidden && currentHls) {
-                currentHls.startLoad();
-            }
-        });
     </script>
 </body>
 </html>
