@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <title>M3U プレイヤー - Netflix風</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🍿 M3U プレイヤー v2.0</title>
   <link href="https://unpkg.com/video.js/dist/video-js.css" rel="stylesheet" />
   <style>
     body {
@@ -19,30 +19,33 @@
       font-size: 1.5rem;
       font-weight: bold;
       color: #e50914;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
     }
-    header select {
-      background: #222;
-      color: #fff;
-      border: none;
+    .controls {
       padding: 0.5rem;
-      font-size: 1rem;
+      text-align: center;
     }
-    main {
+    .controls input, .controls button {
+      margin: 0.3rem;
+      padding: 0.4rem 0.8rem;
+      font-size: 1rem;
+      border-radius: 6px;
+      border: none;
+    }
+    .playlist-section {
       padding: 1rem;
     }
-    #fileInput {
-      margin-bottom: 1rem;
-      padding: 0.5rem;
-      font-size: 1rem;
+    .category {
+      font-size: 1.2rem;
+      margin: 0.5rem 0;
     }
     .playlist {
       display: flex;
       overflow-x: auto;
       gap: 1rem;
-      padding: 1rem 0;
+      padding: 0.5rem 0;
     }
     .item {
       flex: 0 0 auto;
@@ -51,6 +54,7 @@
       background: #222;
       border-radius: 8px;
       overflow: hidden;
+      position: relative;
       transition: transform 0.3s ease;
     }
     .item:hover {
@@ -60,152 +64,248 @@
       width: 100%;
       height: 90px;
       object-fit: cover;
-      background: #333;
     }
     .item-title {
-      padding: 0.5rem;
+      padding: 0.4rem;
       font-size: 0.9rem;
       text-align: center;
     }
+    .fav-btn, .pin-btn {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      background: rgba(0,0,0,0.7);
+      color: yellow;
+      border: none;
+      border-radius: 4px;
+      font-size: 1rem;
+      cursor: pointer;
+      padding: 0 6px;
+    }
+    .pin-btn {
+      right: 35px;
+      color: cyan;
+    }
     .player-container {
-      margin-top: 1rem;
       max-width: 720px;
-      margin-left: auto;
-      margin-right: auto;
+      margin: 1rem auto;
     }
     video {
       width: 100%;
       height: auto;
     }
+    .debug-console {
+      background: #000;
+      color: #0f0;
+      font-size: 0.75rem;
+      padding: 1rem;
+      max-height: 150px;
+      overflow-y: auto;
+      display: none;
+    }
     footer {
       text-align: center;
       padding: 1rem;
-      color: #999;
+      color: #aaa;
       font-size: 0.8rem;
     }
-    #loading {
-      display: none;
-      text-align: center;
-      margin: 1rem;
-      font-size: 1rem;
-      color: #e50914;
-    }
-    @media (max-width: 600px) {
-      .item {
-        width: 120px;
-      }
+    .pip-btn {
+      float: right;
+      background: #e50914;
+      color: #fff;
+      border: none;
+      padding: 0.4rem 0.6rem;
+      font-size: 0.9rem;
+      cursor: pointer;
+      border-radius: 6px;
     }
   </style>
 </head>
 <body>
-  <header>
-    <span id="title">🍿 M3U プレイヤー</span>
-    <select id="langSelect">
-      <option value="ja">日本語</option>
-      <option value="en">English</option>
-    </select>
-  </header>
-  <main>
-    <input id="fileInput" type="file" accept=".m3u,.m3u8" />
-    <div id="loading">読み込み中...</div>
-    <div class="playlist" id="playlist"></div>
-    <div class="player-container">
-      <video id="videoPlayer" class="video-js vjs-default-skin" controls preload="auto"></video>
-    </div>
-  </main>
-  <footer>Version 1.1 - Netflix Style Player</footer>
+  <header>🍿 M3U プレイヤー v2.0</header>
+  <div class="controls">
+    <input type="file" id="fileInput" accept=".m3u,.m3u8" />
+    <button onclick="toggleDebug()">🐛 デバッグ</button>
+    <button onclick="requestPremium()">🔐 プレミアム解除</button>
+  </div>
+  <div class="player-container">
+    <video id="videoPlayer" class="video-js vjs-default-skin" controls preload="auto"></video>
+    <button class="pip-btn" onclick="enterPIP()">📺 PIP</button>
+  </div>
+  <div id="playlistContainer" class="playlist-section"></div>
+  <div id="debugConsole" class="debug-console"></div>
+  <footer>Version 2.0 | Code: 0429 to unlock Premium</footer>
 
   <script src="https://unpkg.com/video.js/dist/video.min.js"></script>
   <script>
     const fileInput = document.getElementById('fileInput');
-    const playlistEl = document.getElementById('playlist');
     const player = videojs('videoPlayer');
-    const langSelect = document.getElementById('langSelect');
-    const loading = document.getElementById('loading');
-    const title = document.getElementById('title');
+    const debugConsole = document.getElementById('debugConsole');
+    const playlistContainer = document.getElementById('playlistContainer');
+    let debug = false;
+    let premium = localStorage.getItem('premium') === 'true';
+    let autoPlayNext = false;
+    let currentPlaylist = [];
 
-    const texts = {
-      ja: {
-        loading: "読み込み中...",
-        error: "再生できませんでした",
-        title: "🍿 M3U プレイヤー"
-      },
-      en: {
-        loading: "Loading...",
-        error: "Unable to play",
-        title: "🍿 M3U Player"
+    function log(msg) {
+      if (debug) {
+        const time = new Date().toLocaleTimeString();
+        debugConsole.innerHTML += `[${time}] ${msg}<br>`;
+        debugConsole.scrollTop = debugConsole.scrollHeight;
       }
-    };
-
-    let currentLang = 'ja';
-
-    langSelect.addEventListener('change', (e) => {
-      currentLang = e.target.value;
-      updateLang();
-    });
-
-    function updateLang() {
-      loading.textContent = texts[currentLang].loading;
-      title.textContent = texts[currentLang].title;
     }
 
-    fileInput.addEventListener('change', (event) => {
-      const file = event.target.files[0];
+    function toggleDebug() {
+      debug = !debug;
+      debugConsole.style.display = debug ? 'block' : 'none';
+      log("デバッグモード " + (debug ? "ON" : "OFF"));
+    }
+
+    function requestPremium() {
+      const code = prompt("プレミアムコードを入力してください:");
+      if (code === '0429') {
+        alert("✅ プレミアム機能が有効になりました！");
+        localStorage.setItem('premium', 'true');
+        premium = true;
+        renderPlaylist(currentPlaylist);
+      } else {
+        alert("❌ 無効なコードです。");
+      }
+    }
+
+    function enterPIP() {
+      const video = document.querySelector('video');
+      if (video && document.pictureInPictureEnabled) {
+        video.requestPictureInPicture();
+        log("📺 PIPモード起動");
+      }
+    }
+
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
       if (!file) return;
-
-      loading.style.display = 'block';
-
       const reader = new FileReader();
-      reader.onload = function (e) {
-        const content = e.target.result;
-        const lines = content.split('\n');
-        const playlist = [];
-
+      reader.onload = (event) => {
+        const lines = event.target.result.split('\n');
+        const items = [];
         let current = {};
-
-        lines.forEach((line) => {
+        lines.forEach(line => {
           line = line.trim();
           if (line.startsWith('#EXTINF')) {
-            const titleMatch = line.match(/,(.+)$/);
-            const logoMatch = line.match(/tvg-logo=["']?([^"'\s]+)/);
-            const title = titleMatch ? titleMatch[1] : '無題';
-            const logo = logoMatch ? logoMatch[1] : '';
-            current = { title, logo };
+            const title = line.match(/,(.+)$/)?.[1] || "無題";
+            const logo = line.match(/tvg-logo="([^"]+)"/)?.[1] || "";
+            const group = line.match(/group-title="([^"]+)"/)?.[1] || "未分類";
+            current = { title, logo, group };
           } else if (line.startsWith('http')) {
             current.url = line;
-            playlist.push({ ...current });
+            items.push({ ...current });
           }
         });
-
-        renderPlaylist(playlist);
-        loading.style.display = 'none';
+        currentPlaylist = items;
+        renderPlaylist(items);
+        log("プレイリスト読み込み完了");
       };
       reader.readAsText(file);
     });
 
-    function renderPlaylist(list) {
-      playlistEl.innerHTML = '';
-      list.forEach((item) => {
-        const div = document.createElement('div');
-        div.className = 'item';
-        const thumb = item.logo ? item.logo : `https://via.placeholder.com/160x90.png?text=${encodeURIComponent(item.title)}`;
-        div.innerHTML = `
-          <img src="${thumb}" alt="${item.title}" />
-          <div class="item-title">${item.title}</div>
-        `;
-        div.onclick = () => {
-          try {
-            player.src({ src: item.url, type: 'application/x-mpegURL' });
-            player.play();
-          } catch (err) {
-            alert(texts[currentLang].error + ": " + err.message);
-          }
-        };
-        playlistEl.appendChild(div);
+    function renderPlaylist(items) {
+      playlistContainer.innerHTML = '';
+      const favorites = getFavorites();
+      const pins = getPins();
+      const byGroup = {};
+      items.forEach(item => {
+        const group = item.group || '未分類';
+        if (!byGroup[group]) byGroup[group] = [];
+        byGroup[group].push(item);
       });
+
+      if (premium && pins.length) {
+        playlistContainer.appendChild(renderCategory("📌 ピン留め", pins, true));
+      }
+      if (favorites.length) {
+        playlistContainer.appendChild(renderCategory("⭐ お気に入り", favorites));
+      }
+
+      for (const group in byGroup) {
+        playlistContainer.appendChild(renderCategory(group, byGroup[group]));
+      }
     }
 
-    updateLang();
+    function renderCategory(title, list, isPin = false) {
+      const section = document.createElement('section');
+      section.innerHTML = `<div class="category">${title}</div>`;
+      const wrapper = document.createElement('div');
+      wrapper.className = 'playlist';
+
+      list.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'item';
+        const thumb = item.logo || `https://via.placeholder.com/160x90.png?text=${encodeURIComponent(item.title)}`;
+        div.innerHTML = `
+          <img src="${thumb}" />
+          <div class="item-title">${item.title}</div>
+          <button class="fav-btn" onclick="event.stopPropagation(); toggleFavorite('${item.title}','${item.url}')">★</button>
+          ${premium ? `<button class="pin-btn" onclick="event.stopPropagation(); togglePin('${item.title}','${item.url}')">📌</button>` : ''}
+        `;
+        div.onclick = () => {
+          player.src({ src: item.url, type: 'application/x-mpegURL' });
+          player.play();
+          log("▶️ 再生開始: " + item.title);
+          if (premium) {
+            autoPlayNext = true;
+            const index = currentPlaylist.findIndex(x => x.url === item.url);
+            if (index >= 0 && index < currentPlaylist.length - 1) {
+              player.on('ended', () => {
+                log("⏭️ 自動再生: " + currentPlaylist[index + 1].title);
+                player.src({ src: currentPlaylist[index + 1].url, type: 'application/x-mpegURL' });
+                player.play();
+              });
+            }
+          }
+        };
+        wrapper.appendChild(div);
+      });
+
+      section.appendChild(wrapper);
+      return section;
+    }
+
+    function getFavorites() {
+      return JSON.parse(localStorage.getItem('favorites') || '[]');
+    }
+
+    function toggleFavorite(title, url) {
+      let favs = getFavorites();
+      const i = favs.findIndex(x => x.url === url);
+      if (i >= 0) {
+        favs.splice(i, 1);
+        log("❌ お気に入り解除: " + title);
+      } else {
+        favs.push({ title, url });
+        log("⭐ お気に入り追加: " + title);
+      }
+      localStorage.setItem('favorites', JSON.stringify(favs));
+      renderPlaylist(currentPlaylist);
+    }
+
+    function getPins() {
+      return JSON.parse(localStorage.getItem('pinned') || '[]');
+    }
+
+    function togglePin(title, url) {
+      let pins = getPins();
+      const i = pins.findIndex(x => x.url === url);
+      if (i >= 0) {
+        pins.splice(i, 1);
+        log("📌 ピン留め解除: " + title);
+      } else {
+        pins.push({ title, url });
+        log("📌 ピン留め追加: " + title);
+      }
+      localStorage.setItem('pinned', JSON.stringify(pins));
+      renderPlaylist(currentPlaylist);
+    }
   </script>
 </body>
 </html>
+
