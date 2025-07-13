@@ -2,98 +2,258 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>🍿 M3U プレイヤー v2.0</title>
   <link href="https://unpkg.com/video.js/dist/video-js.css" rel="stylesheet" />
   <style>
-    body {
-      margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background-color: #141414;
-      color: #fff;
+    /* Reset */
+    * {
+      box-sizing: border-box;
     }
-    header {
-      background: #000;
-      padding: 1rem;
+    body {
+      margin: 0; padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #1f1f1f, #121212);
+      color: #eee;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      overflow-x: hidden;
+    }
+
+    /* 起動画面オーバーレイ */
+    #startupOverlay {
+      position: fixed;
+      inset: 0;
+      background: url('https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=1470&q=80') no-repeat center center/cover;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+      color: white;
       text-align: center;
-      font-size: 1.5rem;
-      font-weight: bold;
+      backdrop-filter: brightness(0.6);
+    }
+    #startupOverlay .logo {
+      font-size: 4rem;
+      font-weight: 900;
+      margin-bottom: 0.5rem;
+      text-shadow: 0 0 10px #e50914;
+      user-select: none;
+    }
+    #startupOverlay .subtext {
+      font-size: 1.3rem;
+      margin-bottom: 1.5rem;
+      text-shadow: 0 0 8px #e50914;
+      user-select: none;
+    }
+    #startupOverlay button {
+      font-size: 1.25rem;
+      padding: 0.75rem 2.5rem;
+      border-radius: 50px;
+      border: none;
+      background: #e50914;
+      color: white;
+      cursor: pointer;
+      box-shadow: 0 6px 16px rgba(229, 9, 20, 0.8);
+      transition: background-color 0.3s ease, box-shadow 0.3s ease;
+      user-select: none;
+    }
+    #startupOverlay button:hover {
+      background-color: #f6121d;
+      box-shadow: 0 8px 24px rgba(246, 18, 29, 0.9);
+    }
+
+    header {
+      background: #111;
+      padding: 1.5rem 1rem;
+      text-align: center;
+      font-size: 2rem;
+      font-weight: 700;
       color: #e50914;
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.9);
       position: sticky;
       top: 0;
-      z-index: 1000;
+      z-index: 1100;
     }
+
     .controls {
-      padding: 0.5rem;
+      padding: 1rem 0;
       text-align: center;
+      background: #111;
+      box-shadow: inset 0 -1px 0 #333;
     }
-    .controls input, .controls button {
-      margin: 0.3rem;
-      padding: 0.4rem 0.8rem;
+
+    .controls input[type="file"] {
+      padding: 0.6rem 1rem;
       font-size: 1rem;
-      border-radius: 6px;
+      border-radius: 30px;
       border: none;
+      background: #222;
+      color: #eee;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      user-select: none;
     }
+    .controls input[type="file"]:hover {
+      background: #333;
+    }
+
+    .controls button {
+      margin: 0 0.5rem;
+      padding: 0.5rem 1.2rem;
+      font-size: 1rem;
+      border-radius: 30px;
+      border: none;
+      background: #e50914;
+      color: white;
+      cursor: pointer;
+      font-weight: 600;
+      box-shadow: 0 3px 8px rgba(229, 9, 20, 0.8);
+      transition: background-color 0.3s ease, box-shadow 0.3s ease;
+      user-select: none;
+    }
+    .controls button:hover {
+      background: #f6121d;
+      box-shadow: 0 6px 16px rgba(246, 18, 29, 0.9);
+    }
+
+    .player-container {
+      max-width: 720px;
+      margin: 1rem auto;
+      position: relative;
+    }
+
+    video {
+      width: 100%;
+      height: auto;
+      border-radius: 12px;
+      box-shadow: 0 6px 20px rgba(229,9,20,0.6);
+      background: black;
+    }
+
+    .pip-btn {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      background: rgba(229,9,20,0.85);
+      color: white;
+      border: none;
+      padding: 6px 10px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      border-radius: 10px;
+      user-select: none;
+      transition: background-color 0.3s ease;
+    }
+    .pip-btn:hover {
+      background: #f6121d;
+    }
+
     .playlist-section {
-      padding: 1rem;
+      padding: 1rem 1.5rem 2rem 1.5rem;
+      max-width: 960px;
+      margin: 0 auto;
     }
+
     .category {
-      font-size: 1.2rem;
-      margin: 0.5rem 0;
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin: 1.8rem 0 0.8rem 0;
+      border-left: 6px solid #e50914;
+      padding-left: 12px;
+      color: #fff;
+      text-shadow: 0 0 4px #e50914;
+      user-select: none;
     }
+
     .playlist {
       display: flex;
       overflow-x: auto;
       gap: 1rem;
-      padding: 0.5rem 0;
+      padding-bottom: 0.6rem;
+      scroll-behavior: smooth;
+      scrollbar-width: thin;
+      scrollbar-color: #e50914 transparent;
     }
+
+    .playlist::-webkit-scrollbar {
+      height: 8px;
+    }
+    .playlist::-webkit-scrollbar-thumb {
+      background-color: #e50914;
+      border-radius: 10px;
+    }
+
     .item {
       flex: 0 0 auto;
       width: 160px;
       cursor: pointer;
       background: #222;
-      border-radius: 8px;
+      border-radius: 12px;
       overflow: hidden;
       position: relative;
-      transition: transform 0.3s ease;
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.7);
+      user-select: none;
     }
     .item:hover {
-      transform: scale(1.05);
+      transform: scale(1.08);
+      box-shadow: 0 6px 30px rgba(229,9,20,0.8);
+      z-index: 10;
     }
     .item img {
       width: 100%;
       height: 90px;
       object-fit: cover;
+      filter: brightness(0.85);
+      border-bottom: 2px solid #e50914;
     }
     .item-title {
-      padding: 0.4rem;
-      font-size: 0.9rem;
-      text-align: center;
-    }
-    .fav-btn, .pin-btn {
-      position: absolute;
-      top: 5px;
-      right: 5px;
-      background: rgba(0,0,0,0.7);
-      color: yellow;
-      border: none;
-      border-radius: 4px;
+      padding: 0.4rem 0.5rem;
       font-size: 1rem;
-      cursor: pointer;
-      padding: 0 6px;
+      font-weight: 600;
+      color: #eee;
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
-    .pin-btn {
-      right: 35px;
+
+    button.fav-btn, button.pin-btn {
+      position: absolute;
+      top: 6px;
+      background: rgba(0,0,0,0.7);
+      border: none;
+      border-radius: 6px;
+      font-size: 1.1rem;
+      cursor: pointer;
+      width: 28px;
+      height: 28px;
+      line-height: 26px;
+      text-align: center;
+      padding: 0;
+      user-select: none;
+      transition: background-color 0.3s ease;
+    }
+    button.fav-btn {
+      right: 6px;
+      color: gold;
+    }
+    button.fav-btn:hover {
+      background-color: rgba(255, 215, 0, 0.85);
+      color: #111;
+    }
+    button.pin-btn {
+      right: 40px;
       color: cyan;
     }
-    .player-container {
-      max-width: 720px;
-      margin: 1rem auto;
+    button.pin-btn:hover {
+      background-color: rgba(0, 255, 255, 0.85);
+      color: #111;
     }
-    video {
-      width: 100%;
-      height: auto;
-    }
+
     .debug-console {
       background: #000;
       color: #0f0;
@@ -102,33 +262,57 @@
       max-height: 150px;
       overflow-y: auto;
       display: none;
+      max-width: 960px;
+      margin: 0 auto 2rem auto;
+      border-radius: 8px;
+      box-shadow: 0 0 20px #0f0;
+      user-select: text;
+      white-space: pre-wrap;
+      word-break: break-word;
     }
+
     footer {
       text-align: center;
       padding: 1rem;
       color: #aaa;
       font-size: 0.8rem;
+      user-select: none;
     }
-    .pip-btn {
-      float: right;
-      background: #e50914;
-      color: #fff;
-      border: none;
-      padding: 0.4rem 0.6rem;
-      font-size: 0.9rem;
-      cursor: pointer;
-      border-radius: 6px;
+
+    /* モバイル最適化 */
+    @media (max-width: 600px) {
+      .item {
+        width: 120px;
+      }
+      .item-title {
+        font-size: 0.9rem;
+      }
+      header {
+        font-size: 1.5rem;
+        padding: 1rem 1rem;
+      }
+      .controls input[type="file"], .controls button {
+        font-size: 0.9rem;
+        padding: 0.5rem 1rem;
+      }
     }
   </style>
 </head>
 <body>
+  <!-- 起動オーバーレイ -->
+  <div id="startupOverlay">
+    <div class="logo">🍿 M3U Player</div>
+    <div class="subtext">ファイルを選択して開始してください</div>
+    <button id="startButton">ファイルを選択</button>
+  </div>
+
   <header>🍿 M3U プレイヤー v2.0</header>
-  <div class="controls">
+  <div class="controls" style="display:none;" id="controls">
     <input type="file" id="fileInput" accept=".m3u,.m3u8" />
     <button onclick="toggleDebug()">🐛 デバッグ</button>
     <button onclick="requestPremium()">🔐 プレミアム解除</button>
   </div>
-  <div class="player-container">
+  <div class="player-container" style="display:none;" id="playerContainer">
     <video id="videoPlayer" class="video-js vjs-default-skin" controls preload="auto"></video>
     <button class="pip-btn" onclick="enterPIP()">📺 PIP</button>
   </div>
@@ -138,19 +322,63 @@
 
   <script src="https://unpkg.com/video.js/dist/video.min.js"></script>
   <script>
+    const startupOverlay = document.getElementById('startupOverlay');
+    const startButton = document.getElementById('startButton');
     const fileInput = document.getElementById('fileInput');
+    const controls = document.getElementById('controls');
+    const playerContainer = document.getElementById('playerContainer');
     const player = videojs('videoPlayer');
     const debugConsole = document.getElementById('debugConsole');
     const playlistContainer = document.getElementById('playlistContainer');
+
     let debug = false;
     let premium = localStorage.getItem('premium') === 'true';
     let autoPlayNext = false;
     let currentPlaylist = [];
 
+    // 起動画面ボタンでファイル選択ダイアログを開く
+    startButton.addEventListener('click', () => {
+      fileInput.click();
+    });
+
+    // ファイル選択後の処理（起動画面を隠してUI表示）
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      startupOverlay.style.display = 'none';
+      controls.style.display = 'block';
+      playerContainer.style.display = 'block';
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const lines = event.target.result.split('\n');
+        const items = [];
+        let current = {};
+        lines.forEach(line => {
+          line = line.trim();
+          if (line.startsWith('#EXTINF')) {
+            const title = line.match(/,(.+)$/)?.[1] || "無題";
+            const logo = line.match(/tvg-logo="([^"]+)"/)?.[1] || "";
+            const group = line.match(/group-title="([^"]+)"/)?.[1] || "未分類";
+            const extUrl = line.match(/url="([^"]+)"/)?.[1] || "";
+            current = { title, logo, group };
+          } else if (line.startsWith('http')) {
+            current.url = line;
+            items.push({ ...current });
+          }
+        });
+        currentPlaylist = items;
+        renderPlaylist(items);
+        log("プレイリスト読み込み完了");
+      };
+      reader.readAsText(file);
+    });
+
     function log(msg) {
       if (debug) {
         const time = new Date().toLocaleTimeString();
-        debugConsole.innerHTML += `[${time}] ${msg}<br>`;
+        debugConsole.style.display = 'block';
+        debugConsole.innerHTML += `[${time}] ${msg}\n`;
         debugConsole.scrollTop = debugConsole.scrollHeight;
       }
     }
@@ -180,33 +408,6 @@
         log("📺 PIPモード起動");
       }
     }
-
-    fileInput.addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const lines = event.target.result.split('\n');
-        const items = [];
-        let current = {};
-        lines.forEach(line => {
-          line = line.trim();
-          if (line.startsWith('#EXTINF')) {
-            const title = line.match(/,(.+)$/)?.[1] || "無題";
-            const logo = line.match(/tvg-logo="([^"]+)"/)?.[1] || "";
-            const group = line.match(/group-title="([^"]+)"/)?.[1] || "未分類";
-            current = { title, logo, group };
-          } else if (line.startsWith('http')) {
-            current.url = line;
-            items.push({ ...current });
-          }
-        });
-        currentPlaylist = items;
-        renderPlaylist(items);
-        log("プレイリスト読み込み完了");
-      };
-      reader.readAsText(file);
-    });
 
     function renderPlaylist(items) {
       playlistContainer.innerHTML = '';
@@ -242,10 +443,10 @@
         div.className = 'item';
         const thumb = item.logo || `https://via.placeholder.com/160x90.png?text=${encodeURIComponent(item.title)}`;
         div.innerHTML = `
-          <img src="${thumb}" />
-          <div class="item-title">${item.title}</div>
-          <button class="fav-btn" onclick="event.stopPropagation(); toggleFavorite('${item.title}','${item.url}')">★</button>
-          ${premium ? `<button class="pin-btn" onclick="event.stopPropagation(); togglePin('${item.title}','${item.url}')">📌</button>` : ''}
+          <img src="${thumb}" alt="${item.title}" />
+          <div class="item-title" title="${item.title}">${item.title}</div>
+          <button class="fav-btn" aria-label="お気に入り切替" title="お気に入り" onclick="event.stopPropagation(); toggleFavorite('${item.title}','${item.url}')">★</button>
+          ${premium ? `<button class="pin-btn" aria-label="ピン留め切替" title="ピン留め" onclick="event.stopPropagation(); togglePin('${item.title}','${item.url}')">📌</button>` : ''}
         `;
         div.onclick = () => {
           player.src({ src: item.url, type: 'application/x-mpegURL' });
@@ -254,6 +455,7 @@
           if (premium) {
             autoPlayNext = true;
             const index = currentPlaylist.findIndex(x => x.url === item.url);
+            player.off('ended'); // 一旦解除
             if (index >= 0 && index < currentPlaylist.length - 1) {
               player.on('ended', () => {
                 log("⏭️ 自動再生: " + currentPlaylist[index + 1].title);
@@ -308,4 +510,3 @@
   </script>
 </body>
 </html>
-
